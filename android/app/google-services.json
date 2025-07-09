@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315070944581",
+    "project_id": "dr-shakoor-portfolio",
+    "storage_bucket": "dr-shakoor-portfolio.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315070944581:android:c0c8c630e2bb7b957c9a2c",
+        "android_client_info": {
+          "package_name": "muhtamim.com.drmdabdusshakoor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwDFFGOQ-EnMvs5Td2_yMt1HhCnItqTrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

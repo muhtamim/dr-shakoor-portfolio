@@ -1,0 +1,55 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "dr-shakoor-portfolio",
+          "appId": "1:315070944581:android:c0c8c630e2bb7b957c9a2c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "dr-shakoor-portfolio",
+          "appId": "1:315070944581:ios:a2dd28f67cdf3c657c9a2c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "dr-shakoor-portfolio",
+          "appId": "1:315070944581:ios:a2dd28f67cdf3c657c9a2c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "dr-shakoor-portfolio",
+          "configurations": {
+            "android": "1:315070944581:android:c0c8c630e2bb7b957c9a2c",
+            "ios": "1:315070944581:ios:a2dd28f67cdf3c657c9a2c",
+            "macos": "1:315070944581:ios:a2dd28f67cdf3c657c9a2c",
+            "web": "1:315070944581:web:af8e9d6e988296127c9a2c",
+            "windows": "1:315070944581:web:753408a7bb3b5fb87c9a2c"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
