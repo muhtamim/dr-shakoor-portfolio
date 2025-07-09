@@ -26,7 +26,6 @@ class PortfolioData {
     this.mobile = "+880 1819 410080",
     this.address = "Flat # 3/5A, House no- 05, Road # 32, Dhanmondi R/A, Dhaka-1209",
     this.careerSummary = "My total clinical experience is thirty-three years...",
-    // UPDATED: Default picture is now a local asset
     this.pictureUrl = 'assets/icon/prof-shakoor.png',
     this.qualifications = const [], this.clinicalExperience = const [], this.expertise = const [],
     this.publications = const [], this.awards = const [], this.books = const [],
@@ -42,7 +41,6 @@ class PortfolioData {
       mobile: data['mobile'] ?? 'Not Set',
       address: data['address'] ?? 'Not Set',
       careerSummary: data['careerSummary'] ?? 'Not Set',
-      // UPDATED: Fallback to local asset if firestore URL is missing
       pictureUrl: data['pictureUrl'] ?? 'assets/icon/prof-shakoor.png',
       qualifications: List<Map<String, String>>.from((data['qualifications'] ?? []).map((item) => Map<String, String>.from(item))),
       clinicalExperience: List<Map<String, String>>.from((data['clinicalExperience'] ?? []).map((item) => Map<String, String>.from(item))),
@@ -58,7 +56,7 @@ class PortfolioData {
 
 class BlogPost {
   final String id, title, content, imageUrl;
-  final String category; // Added category
+  final String category;
   final Timestamp publishedDate;
   int likes, views;
 
@@ -187,7 +185,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // UPDATED: Helper to determine if the image is from network or asset
   ImageProvider _getProfileImage(String url) {
     if (url.startsWith('http')) {
       return NetworkImage(url);
@@ -351,9 +348,8 @@ class _HomePageState extends State<HomePage> {
           child: CircleAvatar(
             radius: 150,
             backgroundColor: Colors.white,
-            // UPDATED: Use the helper to load the image
             backgroundImage: _getProfileImage(data.pictureUrl),
-            onBackgroundImageError: (e, s) {}, // Gracefully handle error
+            onBackgroundImageError: (e, s) {},
           ),
         ),
       ),
@@ -371,7 +367,6 @@ class _HomePageState extends State<HomePage> {
         child: CircleAvatar(
           radius: 120,
           backgroundColor: Colors.white,
-          // UPDATED: Use the helper to load the image
           backgroundImage: _getProfileImage(data.pictureUrl),
           onBackgroundImageError: (e, s) {},
         ),
@@ -491,13 +486,18 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildExpertiseGrid(BuildContext context, List<Map<String, String>> expertise) {
     if (expertise.isEmpty) return [const SizedBox.shrink()];
+
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return [
       GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.of(context).size.width > 1000 ? 4 : (MediaQuery.of(context).size.width > 700 ? 2 : 1),
-          childAspectRatio: 1.1, crossAxisSpacing: 24, mainAxisSpacing: 24,
+          crossAxisCount: screenWidth > 1200 ? 4 : (screenWidth > 900 ? 3 : (screenWidth > 600 ? 2 : 1)),
+          childAspectRatio: 0.9,
+          crossAxisSpacing: 24,
+          mainAxisSpacing: 24,
         ),
         itemCount: expertise.length,
         itemBuilder: (context, index) {
@@ -926,6 +926,7 @@ class _HomePageState extends State<HomePage> {
     ),
   );
 
+  // UPDATED: Removed the 'color' property
   Widget _socialIcon({required String url, required String imageAsset}) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8.0),
     child: InkWell(
@@ -937,11 +938,11 @@ class _HomePageState extends State<HomePage> {
       },
       child: Image.asset(
         imageAsset,
-        height: 24, // Set the desired height
-        width: 24, // Set the desired width
-        color: Colors.white, // Tints the image white, remove if you want original colors
+        height: 24,
+        width: 24,
+        // The 'color' property was removed to show the original icon colors.
         errorBuilder: (context, error, stackTrace) {
-          // Fallback to a default icon if the image fails to load
+          // This fallback is shown if the image asset is not found.
           return const Icon(Icons.circle, color: Colors.white, size: 24);
         },
       ),
@@ -962,7 +963,7 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
   final _commentController = TextEditingController();
   final _subscribeEmailController = TextEditingController();
   bool _isLiked = false;
-  bool _isLiking = false; // To prevent double-taps
+  bool _isLiking = false;
 
   @override
   void initState() {
@@ -971,22 +972,17 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
     _checkIfLiked();
   }
 
-  // --- Unique View Logic ---
   Future<void> _handleView() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> viewedPosts = prefs.getStringList('viewed_posts') ?? [];
 
     if (!viewedPosts.contains(widget.postId)) {
-      // Increment in Firestore only if it's a new view for this device
       FirebaseFirestore.instance.collection('posts').doc(widget.postId).update({'views': FieldValue.increment(1)});
-
-      // Save to local storage
       viewedPosts.add(widget.postId);
       await prefs.setStringList('viewed_posts', viewedPosts);
     }
   }
 
-  // --- Unique Like Logic ---
   Future<void> _checkIfLiked() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> likedPosts = prefs.getStringList('liked_posts') ?? [];
@@ -998,7 +994,7 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
   }
 
   Future<void> _handleLike(BlogPost post) async {
-    if (_isLiking) return; // Prevent multiple clicks
+    if (_isLiking) return;
     setState(() => _isLiking = true);
 
     final prefs = await SharedPreferences.getInstance();
@@ -1006,10 +1002,10 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
 
     final postRef = FirebaseFirestore.instance.collection('posts').doc(widget.postId);
 
-    if (_isLiked) { // User is un-liking
+    if (_isLiked) {
       postRef.update({'likes': FieldValue.increment(-1)});
       likedPosts.remove(widget.postId);
-    } else { // User is liking
+    } else {
       postRef.update({'likes': FieldValue.increment(1)});
       likedPosts.add(widget.postId);
     }
@@ -1106,23 +1102,18 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category and Date
         Row(
           children: [
             Text(post.category.toUpperCase(), style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
             const SizedBox(width: 16),
-            // UPDATED: Date format changed from yy to y
             Text(DateFormat('dd MMMM y').format(post.publishedDate.toDate()), style: const TextStyle(color: Colors.grey)),
           ],
         ),
         const SizedBox(height: 16),
-        // Title
         Text(post.title, style: GoogleFonts.playfairDisplay(fontSize: 42, fontWeight: FontWeight.bold, height: 1.2)),
         const SizedBox(height: 24),
-        // Action Bar (Likes/Views)
         _buildActionRow(post),
         const Divider(height: 40),
-        // Hero Image
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
@@ -1137,10 +1128,8 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
           ),
         ),
         const SizedBox(height: 30),
-        // Post Content
         Text(post.content.replaceAll("\\n", "\n\n"), style: const TextStyle(fontSize: 17, height: 1.8, color: Color(0xFF333333))),
         const Divider(height: 50),
-        // Comments
         const Text('Comments', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         _buildCommentsSection(),
@@ -1158,7 +1147,6 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
   }
 
   Widget _buildActionRow(BlogPost post) {
-    // This combines Likes and Views into one row for a cleaner look.
     return Row(
       children: [
         IconButton(
@@ -1168,7 +1156,7 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
           ),
           onPressed: () => _handleLike(post),
         ),
-        StreamBuilder<DocumentSnapshot>( // StreamBuilder to show real-time like updates
+        StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('posts').doc(widget.postId).snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const Text("...");
@@ -1202,7 +1190,7 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('posts')
-              .where('id', isNotEqualTo: widget.postId) // Exclude current post
+              .where('id', isNotEqualTo: widget.postId)
               .orderBy('id')
               .orderBy('publishedDate', descending: true)
               .limit(3)
@@ -1222,7 +1210,7 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
   Widget _buildRecentPostItem(BuildContext context, BlogPost post) {
     return InkWell(
       onTap: () {
-        Navigator.pushReplacement( // Use pushReplacement to avoid stacking pages
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => BlogDetailsPage(postId: post.id)),
         );
@@ -1241,7 +1229,6 @@ class _BlogDetailsPageState extends State<BlogDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // UPDATED: Date format changed from yy to y
                   Text(DateFormat('dd MMMM y').format(post.publishedDate.toDate()), style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(post.title, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -1466,7 +1453,6 @@ class MessagesView extends StatelessWidget {
           itemBuilder: (context, index) {
             final message = messages[index].data() as Map<String, dynamic>;
             final timestamp = message['timestamp'] as Timestamp?;
-            // UPDATED: Date format changed from yy to y
             final formattedDate = timestamp != null
                 ? DateFormat('d MMM y, hh:mm a').format(timestamp.toDate())
                 : 'No date';
@@ -1924,7 +1910,6 @@ class BlogManagementPage extends StatelessWidget {
   }
 
   Future<void> _deletePost(BuildContext context, String postId) async {
-    // Show a confirmation dialog before deleting
     bool confirm = await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1966,7 +1951,7 @@ class _AddEditPostPageState extends State<AddEditPostPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _imageUrlController = TextEditingController();
-  final _categoryController = TextEditingController(); // Added controller for category
+  final _categoryController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -1979,7 +1964,7 @@ class _AddEditPostPageState extends State<AddEditPostPage> {
       _imageUrlController.text = widget.post!.imageUrl;
       _categoryController.text = widget.post!.category;
     } else {
-      _categoryController.text = 'Web Design'; // Default category
+      _categoryController.text = 'Web Design';
     }
   }
 
@@ -2016,18 +2001,16 @@ class _AddEditPostPageState extends State<AddEditPostPage> {
         'title': _titleController.text,
         'content': _contentController.text,
         'imageUrl': _imageUrlController.text,
-        'category': _categoryController.text, // Save category
+        'category': _categoryController.text,
         'id': widget.post?.id ?? FirebaseFirestore.instance.collection('posts').doc().id,
       };
 
       if (widget.post == null) {
-        // New post
         postData['publishedDate'] = Timestamp.now();
         postData['likes'] = 0;
         postData['views'] = 0;
         await FirebaseFirestore.instance.collection('posts').doc(postData['id']).set(postData);
       } else {
-        // Existing post
         await FirebaseFirestore.instance.collection('posts').doc(widget.post!.id).update(postData);
       }
       if(mounted) Navigator.of(context).pop();
@@ -2075,7 +2058,7 @@ class _AddEditPostPageState extends State<AddEditPostPage> {
                 validator: (value) => value!.isEmpty ? 'Title cannot be empty' : null,
               ),
               const SizedBox(height: 20),
-              TextFormField( // Category field
+              TextFormField(
                 controller: _categoryController,
                 decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
                 validator: (value) => value!.isEmpty ? 'Category cannot be empty' : null,
@@ -2110,55 +2093,142 @@ class _AddEditPostPageState extends State<AddEditPostPage> {
 
 
 // --- PORTFOLIO DEFAULT DATA PROVIDER ---
-// This class centralizes the initial/default data for the portfolio.
 class PortfolioDataProvider {
-  static List<Map<String, String>> getInitialQualifications() => [
-    {'title': 'M.B.B.S.', 'subtitle': 'Shere-E-Bangla Medical College, Barisal, Bangladesh. September 1989.'},
-    {'title': 'FCPS', 'subtitle': 'Fellow of the College of Physician and Surgeon Dhaka, Bangladesh. January 2000.'},
-    {'title': 'PhD', 'subtitle': 'The University of Chittagong, Bangladesh. Specialist in Physical Medicine and Rehabilitation.'},
-  ];
+  static List<Map<String, String>> getInitialQualifications() =>
+      [
+        {
+          'title': 'M.B.B.S.',
+          'subtitle': 'Shere-E-Bangla Medical College, Barisal, Bangladesh. September 1989.'
+        },
+        {
+          'title': 'FCPS',
+          'subtitle': 'Fellow of the College of Physician and Surgeon Dhaka, Bangladesh. January 2000.'
+        },
+        {
+          'title': 'PhD',
+          'subtitle': 'The University of Chittagong, Bangladesh. Specialist in Physical Medicine and Rehabilitation.'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialClinicalExperience() => [
-    {'title': 'Oct 01, 2016 – Present', 'subtitle': 'Professor, Department of Physical Medicine and Rehabilitation, BSMMU, Dhaka'},
-    {'title': 'Nov 05, 2007 – Sep 30, 2016', 'subtitle': 'Associate Professor, PM&R Dept., BSMMU, Dhaka'},
-    {'title': 'Oct 09, 2003 – Nov 05, 2007', 'subtitle': 'Assistant Professor, PM&R Dept., BSMMU, Dhaka'},
-    {'title': 'Jul 05, 2000 – Oct 07, 2003', 'subtitle': 'Assistant Professor, Department of Physical Medicine, Chittagong Medical College'},
-  ];
+  static List<Map<String, String>> getInitialClinicalExperience() =>
+      [
+        {
+          'title': 'Oct 01, 2016 – Present',
+          'subtitle': 'Professor, Department of Physical Medicine and Rehabilitation, BSMMU, Dhaka'
+        },
+        {
+          'title': 'Nov 05, 2007 – Sep 30, 2016',
+          'subtitle': 'Associate Professor, PM&R Dept., BSMMU, Dhaka'
+        },
+        {
+          'title': 'Oct 09, 2003 – Nov 05, 2007',
+          'subtitle': 'Assistant Professor, PM&R Dept., BSMMU, Dhaka'
+        },
+        {
+          'title': 'Jul 05, 2000 – Oct 07, 2003',
+          'subtitle': 'Assistant Professor, Department of Physical Medicine, Chittagong Medical College'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialExpertise() => [
-    {'title': 'Clinical Rehabilitation', 'subtitle': 'Comprehensive assessment & management of musculoskeletal and neuro-rehabilitation patients.'},
-    {'title': 'Academic Teaching', 'subtitle': 'MBBS, FCPS & MD curriculum development and hands-on training for students & postgraduates.'},
-    {'title': 'Research & Publications', 'subtitle': 'Principal investigator on BMRC projects; author of 95+ peer-reviewed articles.'},
-    {'title': 'Consultancy & Workshops', 'subtitle': 'Expert advisor on program design & invited speaker at national/international conferences.'},
-  ];
+  static List<Map<String, String>> getInitialExpertise() =>
+      [
+        {
+          'title': 'Clinical Rehabilitation',
+          'subtitle': 'Comprehensive assessment & management of musculoskeletal and neuro-rehabilitation patients.'
+        },
+        {
+          'title': 'Academic Teaching',
+          'subtitle': 'MBBS, FCPS & MD curriculum development and hands-on training for students & postgraduates.'
+        },
+        {
+          'title': 'Research & Publications',
+          'subtitle': 'Principal investigator on BMRC projects; author of 95+ peer-reviewed articles.'
+        },
+        {
+          'title': 'Consultancy & Workshops',
+          'subtitle': 'Expert advisor on program design & invited speaker at national/international conferences.'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialAwards() => [
-    {'title': 'University Gold Medal in Research', 'subtitle': 'For basic research in the field of Medical Science.', 'year': '2016'},
-    {'title': 'UGC Gold Medal', 'subtitle': 'Awarded by University Grants Commission of Bangladesh.', 'year': '2006'},
-    {'title': 'Bangladesh Bioethics Award (BBS)', 'subtitle': 'Asian Bioethics Conference, for contributions in bioethics.', 'year': '2019'},
-  ];
+  static List<Map<String, String>> getInitialAwards() =>
+      [
+        {
+          'title': 'University Gold Medal in Research',
+          'subtitle': 'For basic research in the field of Medical Science.',
+          'year': '2016'
+        },
+        {
+          'title': 'UGC Gold Medal',
+          'subtitle': 'Awarded by University Grants Commission of Bangladesh.',
+          'year': '2006'
+        },
+        {
+          'title': 'Bangladesh Bioethics Award (BBS)',
+          'subtitle': 'Asian Bioethics Conference, for contributions in bioethics.',
+          'year': '2019'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialBooks() => [
-    {'title': 'Physical Modalities in Rehabilitation Medicine', 'published': 'Published 2024', 'isbn': 'ISBN: 978-984-99076-7-1'},
-    {'title': 'Baatroger Karon o Chikitsha', 'published': 'Published 2009', 'isbn': 'ISBN: 978-984-414-359-3'},
-    {'title': 'Betha Niramoya Bayam', 'published': '', 'isbn': ''},
-  ];
+  static List<Map<String, String>> getInitialBooks() =>
+      [
+        {
+          'title': 'Physical Modalities in Rehabilitation Medicine',
+          'published': 'Published 2024',
+          'isbn': 'ISBN: 978-984-99076-7-1'
+        },
+        {
+          'title': 'Baatroger Karon o Chikitsha',
+          'published': 'Published 2009',
+          'isbn': 'ISBN: 978-984-414-359-3'
+        },
+        {'title': 'Betha Niramoya Bayam', 'published': '', 'isbn': ''},
+      ];
 
-  static List<Map<String, String>> getInitialEditorialRoles() => [
-    {'title': 'Executive Editor', 'subtitle': 'PMR Bulletin (Official bulletin of The Bangladesh Association of Physical Medicine and Rehabilitation)'},
-    {'title': 'Editorial Board Member', 'subtitle': 'Bangladesh Journal of Bioethics. ISSN: 2226-9231 • eISSN: 2078-1458'},
-    {'title': 'Editorial Board Member', 'subtitle': 'Bangladesh Journal of Medical Science. ISSN: 2223-4721 • eISSN: 2076-0299'},
-  ];
+  static List<Map<String, String>> getInitialEditorialRoles() =>
+      [
+        {
+          'title': 'Executive Editor',
+          'subtitle': 'PMR Bulletin (Official bulletin of The Bangladesh Association of Physical Medicine and Rehabilitation)'
+        },
+        {
+          'title': 'Editorial Board Member',
+          'subtitle': 'Bangladesh Journal of Bioethics. ISSN: 2226-9231 • eISSN: 2078-1458'
+        },
+        {
+          'title': 'Editorial Board Member',
+          'subtitle': 'Bangladesh Journal of Medical Science. ISSN: 2223-4721 • eISSN: 2076-0299'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialAcademicActivities() => [
-    {'title': 'Faculty Member, Physical Medicine & Rehabilitation, BCPS', 'subtitle': 'since July 2000; Member Secretary April 2019–April 2023.'},
-    {'title': 'Chairman, Ethics Review Board, Bangladesh Bioethics Society', 'subtitle': '2014–Present'},
-    {'title': 'Member, National Research Ethics Committee of Bangladesh', 'subtitle': '2015–Present'},
-  ];
+  static List<Map<String, String>> getInitialAcademicActivities() =>
+      [
+        {
+          'title': 'Faculty Member, Physical Medicine & Rehabilitation, BCPS',
+          'subtitle': 'since July 2000; Member Secretary April 2019–April 2023.'
+        },
+        {
+          'title': 'Chairman, Ethics Review Board, Bangladesh Bioethics Society',
+          'subtitle': '2014–Present'
+        },
+        {
+          'title': 'Member, National Research Ethics Committee of Bangladesh',
+          'subtitle': '2015–Present'
+        },
+      ];
 
-  static List<Map<String, String>> getInitialPublications() => [
-    {'title': 'Effects of Pulmonary Rehabilitation on the Patients with COVID-19 infection.', 'subtitle': 'Shakoor MA, M Moniruzzaman M, Atiquzzaman M, Islam MM, Dewan PD et al. Bangladesh Medical Res Counc Bull 2023; 49: 56-62.'},
-    {'title': 'Absorption of Electromagnetic Radiation on Human Lower Back Region.', 'subtitle': 'M A Shakoor, M Moyeenuzzaman, R Azimb, S R Chakraborty, M T Islamc, M Samsuzzaman. Jurnal Kejuruteraan 33(1) 2021: 145-149.'},
-    {'title': 'Effects of Manual Continuous Home Cervical Traction in Cervical Spondylosis.', 'subtitle': 'Shakoor MA, Emran MA, Zaman AKA, Moyeenuzzaman M. Bangladesh Med Res Counc Bull 2020; 46:128-133.'},
-  ];
+  static List<Map<String, String>> getInitialPublications() =>
+      [
+        {
+          'title': 'Effects of Pulmonary Rehabilitation on the Patients with COVID-19 infection.',
+          'subtitle': 'Shakoor MA, M Moniruzzaman M, Atiquzzaman M, Islam MM, Dewan PD et al. Bangladesh Medical Res Counc Bull 2023; 49: 56-62.'
+        },
+        {
+          'title': 'Absorption of Electromagnetic Radiation on Human Lower Back Region.',
+          'subtitle': 'M A Shakoor, M Moyeenuzzaman, R Azimb, S R Chakraborty, M T Islamc, M Samsuzzaman. Jurnal Kejuruteraan 33(1) 2021: 145-149.'
+        },
+        {
+          'title': 'Effects of Manual Continuous Home Cervical Traction in Cervical Spondylosis.',
+          'subtitle': 'Shakoor MA, Emran MA, Zaman AKA, Moyeenuzzaman M. Bangladesh Med Res Counc Bull 2020; 46:128-133.'
+        },
+      ];
 }
